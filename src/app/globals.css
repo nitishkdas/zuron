@@ -114,6 +114,7 @@ html[data-mode="dark"] {
   --sidebar-accent: oklch(0.22 0.01 260);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.28 0.01 260);
+  --brand-mark-bg: #1b1c24;
 }
 
 html[data-mode="light"] {
@@ -143,6 +144,7 @@ html[data-mode="light"] {
   --sidebar-accent: oklch(0.96 0.004 260);
   --sidebar-accent-foreground: oklch(0.25 0.01 260);
   --sidebar-border: oklch(0.922 0.004 260);
+  --brand-mark-bg: #ffffff;
 }
 
 /* ---- ACCENT: primary color ---- */
