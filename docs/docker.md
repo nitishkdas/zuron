@@ -53,6 +53,52 @@ docker build \
 docker run -d --env-file .env.local -e PORT=3000 -p 3000:3000 wacrm
 ```
 
+## Deploying to a low-RAM server
+
+`next build` (and `npm ci` before it) can easily need well over 1GB of
+RAM — too much for a small VPS. Instead of building on the server,
+build in CI and only pull the finished image there.
+
+1. **CI builds and pushes the image.** `.github/workflows/docker-publish.yml`
+   builds the `Dockerfile` on every push to `main` and pushes it to
+   GitHub Container Registry as `ghcr.io/<owner>/<repo>:latest`. Add
+   your `NEXT_PUBLIC_*` values as repo secrets/variables under
+   **Settings > Secrets and variables > Actions** first (they're
+   baked into the client bundle at build time, same as local Docker
+   builds — see above).
+
+2. **Make the package pullable from the server**, either:
+   - Mark the package public (GitHub → your profile → Packages →
+     the `zuron` package → Package settings → Change visibility), or
+   - `docker login ghcr.io -u <github-username>` on the server with a
+     [PAT](https://github.com/settings/tokens) that has `read:packages`.
+
+3. **On the server**, copy only `docker-compose.prod.yml` and
+   `.env.local` (no need to clone the repo):
+
+   ```bash
+   IMAGE=ghcr.io/<owner>/<repo>:latest \
+     docker compose -f docker-compose.prod.yml --env-file .env.local pull
+
+   IMAGE=ghcr.io/<owner>/<repo>:latest \
+     docker compose -f docker-compose.prod.yml --env-file .env.local up -d
+   ```
+
+   Persist `IMAGE` (and `HOST_PORT` if you use it) by adding them to
+   `.env.local` instead of exporting them each time.
+
+4. **To deploy a new version**, re-run steps in 3 after CI finishes —
+   no build step runs on the server at any point.
+
+If RAM is still tight for *running* the app (not just building it),
+add a small swap file as a safety margin:
+
+```bash
+sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
 ## Notes
 
 - Database migrations under `supabase/` are **not** run by the

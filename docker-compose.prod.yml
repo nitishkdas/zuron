@@ -1,0 +1,37 @@
+name: wacrm
+
+# Production compose file for low-memory servers: pulls the image
+# built by .github/workflows/docker-publish.yml instead of building
+# it locally (`next build` alone needs well over 1GB RAM). Copy just
+# this file (and your .env.local) to the server — the rest of the
+# repo isn't needed there.
+#
+# Usage on the server:
+#   docker login ghcr.io -u <github-username>          # once, if the package is private
+#   docker compose -f docker-compose.prod.yml --env-file .env.local pull
+#   docker compose -f docker-compose.prod.yml --env-file .env.local up -d
+#
+# Set IMAGE below to your published image, e.g.:
+#   ghcr.io/nitishkdas/zuron:latest
+services:
+  app:
+    image: ${IMAGE:?Set IMAGE to your published ghcr.io image, e.g. ghcr.io/nitishkdas/zuron:latest}
+    env_file:
+      - .env.local
+    environment:
+      PORT: 3000
+    ports:
+      - '${HOST_PORT:-3000}:3000'
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000').then((r)=>process.exit(r.ok||r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
